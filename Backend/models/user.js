@@ -1,12 +1,11 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
+
+import {Model} from 'sequelize';
+export default (sequelize, DataTypes) => {
   class User extends Model {
     /**
      * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
+     * This method is not a part of DataTypes lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
@@ -14,9 +13,86 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   User.init({
-    firstName: DataTypes.STRING,
-    lastName: DataTypes.STRING,
-    email: DataTypes.STRING
+    id: {
+            allowNull: false,
+            autoIncrement: true,
+            primaryKey: true,
+            type: DataTypes.INTEGER
+          },
+          firstName: {
+            allowNull:false,
+            validate: (value) => {
+              if(value.length<2){
+                throw new Error("Invalid First Name !")
+              }
+            },
+            type: DataTypes.STRING
+          },
+          lastName: {
+            type: DataTypes.STRING
+          },
+          email: {
+            allowNull:false,
+            unique:true,
+            validate: (value) => {
+              if(!validator.isEmail(value)){
+                throw new Error("Invalid Email !")
+              }
+            },
+            type: DataTypes.STRING,
+          },
+          password:{
+            allowNull:false,
+            unique: true,
+            validate: (value) => {
+              if(!validator.isStrongPassword(value)){
+               throw new Error("Password must include upper, lower, number & special character (min 8).");
+              }
+            },
+            type: DataTypes.STRING,
+          },
+          role:{
+            type: DataTypes.ENUM('candidate','recruiter','admin'),
+            defaultValue: 'candidate',
+    
+          },
+          avatar_url: {
+            type: DataTypes.STRING,
+            validate:(value) => {
+              if(!validator.isURL(value)){
+                throw new Error("Invalid Avatar URL !")
+              }
+            }
+          },
+          resume_url: {
+            type: DataTypes.STRING,
+            validate:(value) => {
+              if(!validator.isURL(value)){
+                throw new Error("Invalid Avatar URL !")
+              }
+            }
+          },
+          bio:{
+            type: DataTypes.STRING,
+            validate:(value) => {
+              if(value.length > 500){
+                throw new Error("Length of Bio should not exceed above 500 limit")
+              }
+            }
+          },
+          token:{
+            type:DataTypes.TEXT,
+            defaultValue:"[]",
+            allowNull: false,
+          },
+          createdAt: {
+            allowNull: false,
+            type: DataTypes.DATE
+          },
+          updatedAt: {
+            allowNull: false,
+            type: DataTypes.DATE
+          }
   }, {
     sequelize,
     modelName: 'User',

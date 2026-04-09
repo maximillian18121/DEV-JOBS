@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      refresh_tokens.belongsTo(models.User,{foreignKey:'user_id'})
     }
   }
   refresh_tokens.init({
@@ -20,8 +21,13 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER
       },
       user_id: {
+       allowNull: false,
+        unique: true,
         type: DataTypes.INTEGER,
-        allowNull:false
+        references: {
+          model: "Users", // referenced table
+          key: "id",
+        },
       },
       token:{
         type: DataTypes.STRING(512),

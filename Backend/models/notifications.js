@@ -1,7 +1,7 @@
-'use strict';
+"use strict";
 
-import Model from 'sequelize';
-export default  (sequelize, DataTypes) => {
+import Model from "sequelize";
+export default (sequelize, DataTypes) => {
   class notifications extends Model {
     /**
      * Helper method for defining associations.
@@ -10,48 +10,62 @@ export default  (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+
+      notifications.belongsTo(models.User, { foreignKey: "user_id" });
     }
   }
-  notifications.init({
-    id: {
+  notifications.init(
+    {
+      id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: DataTypes.INTEGER
-      },
-      user_id:{
         type: DataTypes.INTEGER,
-        allowNull:false,
-        unique: true,
       },
-      type:{
-        type: DataTypes.ENUM('application_update', 'new_applicant', 'job_expiring', 'system'),
-        allowNull:false,
-        defaultValue: 'application_update'
+      user_id: {
+        allowNull: false,
+        unique: true,
+        type: DataTypes.INTEGER,
+        references: {
+          model: "Users", // referenced table
+          key: "id",
+        },
+      },
+      type: {
+        type: DataTypes.ENUM(
+          "application_update",
+          "new_applicant",
+          "job_expiring",
+          "system",
+        ),
+        allowNull: false,
+        defaultValue: "application_update",
       },
       message: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: false,
       },
-      is_read:{
+      is_read: {
         type: DataTypes.BOOLEAN,
-        defaultValue:false
+        defaultValue: false,
       },
-      reference_id:{
-        type:DataTypes.INTEGER,
-        allowNull:false,
+      reference_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,
-        type: DataTypes.DATE
+        type: DataTypes.DATE,
       },
       updatedAt: {
         allowNull: false,
-        type: DataTypes.DATE
-      }
-  }, {
-    sequelize,
-    modelName: 'notifications',
-  });
+        type: DataTypes.DATE,
+      },
+    },
+    {
+      sequelize,
+      modelName: "notifications",
+    },
+  );
   return notifications;
 };

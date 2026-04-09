@@ -10,6 +10,16 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      User.hasMany(models.Companies, {foreignKey: "owner_id"});
+      User.hasMany(models.refresh_tokens, {foreignKey:"user_id"});
+      User.hasMany(models.notifications, {foreignKey: "user_id"});
+      // Many-to-many with Jobs through saved_jobs
+      User.belongsToMany(models.Jobs, {
+        through: models.saved_jobs,
+        foreignKey: 'user_id',
+        otherKey: 'job_id',
+        as: 'savedJobs'
+      });
     }
   }
   User.init({

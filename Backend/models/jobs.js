@@ -10,6 +10,13 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // Many-to-many with User through saved_jobs
+      Jobs.belongsToMany(models.User, {
+        through: models.saved_jobs,
+        foreignKey: 'job_id',
+        otherKey: 'user_id',
+        as: 'savedByUsers'
+      });
     }
   }
   Jobs.init({

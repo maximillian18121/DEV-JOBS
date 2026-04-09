@@ -10,6 +10,8 @@ export default (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      job_tags.belongsTo(models.Jobs,{foreignKey:"job_id", as:"jobs"});
+      job_tags.belongsTo(models.tags,{foreignKey:"tag_id", as:"tags"});
     }
   }
   job_tags.init({
@@ -23,11 +25,19 @@ export default (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull:false,
         unique:true,
+        references:{
+          model:"tags",
+          key:"id"
+        }
       },
       job_id:{
         type: DataTypes.INTEGER,
         allowNull:false,
         unique:true,
+        references:{
+          model:"Jobs",
+          key:"id"
+        }
       },
   }, {
     sequelize,

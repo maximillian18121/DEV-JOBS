@@ -21,6 +21,13 @@ export default (sequelize, DataTypes) => {
       Jobs.belongsTo(models.User,{foreignKey:"posted_by", as:"users"});
       Jobs.belongsTo(models.Companies,{foreignKey:"company_id", as:"companies"});
 
+      Jobs.belongsToMany(models.tags,{
+        through:models.job_tags,
+        foreignKey:"job_id",
+        otherKey:"tag_id",
+        as:"RelatedTags"
+      })
+
     }
   }
   Jobs.init({

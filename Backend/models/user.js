@@ -20,6 +20,13 @@ export default (sequelize, DataTypes) => {
         otherKey: 'job_id',
         as: 'savedJobs'
       });
+
+      User.belongsToMany(models.Companies,{
+        through:models.Jobs,
+        foreignKey:"posted_by",
+        otherKey:"company_id",
+        as:"AppliedCompanies"
+      })
     }
   }
   User.init({

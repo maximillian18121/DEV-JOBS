@@ -11,6 +11,15 @@ export default (sequelize, DataTypes) => {
       // define association here
 
       Companies.belongsTo(models.User, { foreignKey: "owner_id" });
+
+      Companies.belongsToMany(models.User,{
+        through:models.Jobs,
+        foreignKey:"company_id",
+        otherKey:"posted_by",
+        as: "Jobs"
+      })
+
+      
     }
   }
   Companies.init(

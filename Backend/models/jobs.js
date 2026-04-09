@@ -18,6 +18,9 @@ export default (sequelize, DataTypes) => {
         as: 'savedByUsers'
       });
 
+      Jobs.belongsTo(models.User,{foreignKey:"posted_by", as:"users"});
+      Jobs.belongsTo(models.Companies,{foreignKey:"company_id", as:"companies"});
+
     }
   }
   Jobs.init({

@@ -1,7 +1,7 @@
 'use strict';
 
-import Model from 'sequelize';
-module.exports = (sequelize, DataTypes) => {
+import {Model} from 'sequelize';
+export default (sequelize, DataTypes) => {
   class saved_jobs extends Model {
     /**
      * Helper method for defining associations.
@@ -10,6 +10,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      saved_jobs.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+      saved_jobs.belongsTo(models.Jobs, { foreignKey: 'job_id', as: 'job' });
     }
   }
   saved_jobs.init({
@@ -22,10 +24,18 @@ module.exports = (sequelize, DataTypes) => {
       user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references:{
+          model:"Users",
+          key: "id"
+        }
       },
       job_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references:{
+          model:"Jobs",
+          key:"id"
+        }
       },
       saved_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
       createdAt: {

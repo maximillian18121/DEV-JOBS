@@ -17,6 +17,7 @@ export default (sequelize, DataTypes) => {
         otherKey: 'user_id',
         as: 'savedByUsers'
       });
+
     }
   }
   Jobs.init({
@@ -30,10 +31,18 @@ export default (sequelize, DataTypes) => {
         allowNull: false,
         unique: true,
         type: DataTypes.INTEGER,
+        references:{
+          model:"Companies",
+          key:"id"
+        }
       },
       posted_by: {
         allowNull: false,
         type: DataTypes.INTEGER,
+        references:{
+          model:"Users",
+          key:"id"
+        }
       },
       title: {
         type: DataTypes.STRING,

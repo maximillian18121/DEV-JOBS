@@ -27,6 +27,13 @@ export default (sequelize, DataTypes) => {
         otherKey:"company_id",
         as:"AppliedCompanies"
       })
+
+      User.belongsToMany(models.Jobs,{
+        through:models.Application,
+        foreignKey:"applicant_id",
+        otherKey:"job_id",
+        as:"AppliedJobs"
+      })
     }
   }
   User.init({

@@ -10,6 +10,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      Application.belongsTo(models.User,{foreignKey:"applicant_id", as:"applicants"});
+      Application.belongsTo(models.Jobs, {foreignKey:"job_id", as:"jobs"});
     }
   }
   Application.init({

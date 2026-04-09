@@ -28,6 +28,13 @@ export default (sequelize, DataTypes) => {
         as:"RelatedTags"
       })
 
+      Jobs.belongsToMany(models.User,{
+        through:models.Application,
+        foreignKey:"job_id",
+        otherKey:"applicant_id",
+        as:"Applicants"
+      })
+
     }
   }
   Jobs.init({

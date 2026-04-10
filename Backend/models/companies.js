@@ -1,5 +1,6 @@
 "use strict";
-import Model from "sequelize";
+import { Model } from "sequelize";
+import validator from "validator";
 export default (sequelize, DataTypes) => {
   class Companies extends Model {
     /**
@@ -16,7 +17,7 @@ export default (sequelize, DataTypes) => {
         through:models.Jobs,
         foreignKey:"company_id",
         otherKey:"posted_by",
-        as: "Jobs"
+        as: "SavedJobs"
       })
 
       

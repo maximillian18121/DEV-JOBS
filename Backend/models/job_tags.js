@@ -1,6 +1,6 @@
 'use strict';
 
-import Model from 'sequelize';
+import { Model } from 'sequelize';
 export default (sequelize, DataTypes) => {
   class job_tags extends Model {
     /**

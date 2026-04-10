@@ -1,7 +1,8 @@
 'use strict';
 
-import Model from 'sequelize';
-module.exports = (sequelize, DataTypes) => {
+import { Model } from 'sequelize';
+import validator from 'validator';
+export default  (sequelize, DataTypes) => {
   class Application extends Model {
     /**
      * Helper method for defining associations.

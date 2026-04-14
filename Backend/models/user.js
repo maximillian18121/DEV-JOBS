@@ -11,36 +11,58 @@ export default (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
 
-    async GenerateToke(time) {
+    async GenerateToken() {
+
+      
       let user = this;
 
-      const newToken = jwt.sign(
+      const newShortToken = jwt.sign(
         {
           id: user.id,
           email: user.email,
         },
         process.env.JWT_SECRET_KEY,
-        { expiresIn: time },
+        { expiresIn: '15m' },
+      );
+
+      const newLargeToken = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+        },
+        process.env.JWT_SECRET_KEY,
+        { expiresIn: '7d' },
       );
 
       let parsedTokens = JSON.parse(user.token||"[]");
 
       parsedTokens.push({
-        token: newToken,
-        createdAt: new Date()
+        access_token: newShortToken,
+        refresh_token: newLargeToken,
       })
 
+      try{
+         await User.update(
+        { token: JSON.stringify(parsedTokens) },
+        { where: { id: user.id } }
+      );
+      }
+      catch(error){
+        console.log(error);
+        throw new Error(error);
+      }
+      // Use update() method instead of save() to avoid validation errors on other fields
+     
+
+      // Refresh the user object with updated token
       user.token = JSON.stringify(parsedTokens);
-
       await user.save();
-
       return parsedTokens;
-
     }
 
     static async findByCredentials(email, password){
 
-      const user = await User.findOne({email: email.trim()});
+      const user = await User.findOne({ where: { email: email.trim() } });
 
       if(!user){
         throw new Error("Invalid email or password");
@@ -133,7 +155,7 @@ export default (sequelize, DataTypes) => {
       avatar_url: {
         type: DataTypes.STRING,
         validate: (value) => {
-          if (!validator.isURL(value)) {
+          if (value && !validator.isURL(value)) {
             throw new Error("Invalid Avatar URL !");
           }
         },
@@ -141,21 +163,21 @@ export default (sequelize, DataTypes) => {
       resume_url: {
         type: DataTypes.STRING,
         validate: (value) => {
-          if (!validator.isURL(value)) {
-            throw new Error("Invalid Avatar URL !");
+          if (value && !validator.isURL(value)) {
+            throw new Error("Invalid Resume URL !");
           }
         },
       },
       bio: {
         type: DataTypes.STRING,
         validate: (value) => {
-          if (value.length > 500) {
+          if (value && value.length > 500) {
             throw new Error("Length of Bio should not exceed above 500 limit");
           }
         },
       },
       token: {
-        type: DataTypes.TEXT,
+        type: DataTypes.STRING(512),
         defaultValue: "[]",
         allowNull: false,
       },
@@ -180,7 +202,7 @@ export default (sequelize, DataTypes) => {
 
           user.password = await bcrypt.hash(user.password, 12);
 
-          user.token = JSON.stringify([]);
+          // user.token = JSON.stringify([]);
 
         },
         beforeUpdate:async(user,options)=>{
@@ -189,8 +211,8 @@ export default (sequelize, DataTypes) => {
 
             user.password = await bcrypt.hash(user.password, 12);
           }
-        }
-      }
+        },
+      },
     },
   );
   return User;

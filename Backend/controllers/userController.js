@@ -1,5 +1,6 @@
 import { Transaction } from "sequelize";
 import db from "../models/index.js";
+import { parse } from "dotenv";
 
 const user = db.User;
 const refresh_tokens = db.refresh_tokens;
@@ -237,8 +238,53 @@ const logout = async (req,res) => {
         return res.status(400).json({ code: "VALIDATION_ERROR", message: "refresh_token is required" });
     }
 
-    
+    let existing_token = await refresh_tokens.findOne({
+        where:{
+            token : JSON.stringify(refresh_token)
+        }
+    });
 
+    if(!existing_token){
+        return res.status(401).json({ code: "REFRESH_TOKEN_EXPIRED", message: "Refresh token is invalid or expired" });
+    }
+
+    if(existing_token.is_revoked){
+         return res.status(401).json({ code: "REFRESH_TOKEN_REVOKED", message: "Refresh token is invalid or revoked" });
+    }
+
+    if(new Date()> existing_token.expires_at){
+        return res.status(401).json({ code: "REFRESH_TOKEN_EXPIRED", message: "Refresh token has expired" });
+    }
+
+    const transaction = await db.sequelize.transaction();
+
+    try {
+        const revoked_token = await existing_token.update({is_revoked: true}, {transaction});
+        const userId = existing_token.user_id;
+        const token_user = await user.findByPk(userId, {transaction});
+
+        let parsed_token = JSON.parse(token_user.token);
+
+        parsed_token = parsed_token.filter((item)=> item.access_token !== refresh_token.access_token );
+
+        const updated_user = await token_user.update({token : JSON.stringify(parsed_token)}, {transaction});
+
+        await transaction.commit();
+
+        return res.status(200).json({
+        message:"User Logged out successfully",
+        token: parsed_token });
+
+       
+
+    } catch (error) {
+
+        await transaction.rollback();
+        return res.status(500).json({
+            code: "INTERNAL_ERROR",
+            message: error.message
+        })
+    }
 }
 
-export { demoController, register, login, refreshToken };
+export { demoController, register, login, refreshToken, logout };

@@ -3,6 +3,7 @@
 import { Model } from "sequelize";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import validator from "validator";
 export default (sequelize, DataTypes) => {
   class User extends Model {
     /**
@@ -12,66 +13,48 @@ export default (sequelize, DataTypes) => {
      */
 
     async GenerateToken() {
+  const user = this;
 
-      
-      let user = this;
+  const newShortToken = jwt.sign(
+    { id: user.id, email: user.email },
+    process.env.JWT_SECRET_KEY,
+    { expiresIn: '15m' }
+  );
 
-      const newShortToken = jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-        },
-        process.env.JWT_SECRET_KEY,
-        { expiresIn: '15m' },
-      );
+  const newLargeToken = jwt.sign(
+    { id: user.id, email: user.email },
+    process.env.JWT_SECRET_KEY,
+    { expiresIn: '7d' }
+  );
 
-      const newLargeToken = jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-        },
-        process.env.JWT_SECRET_KEY,
-        { expiresIn: '7d' },
-      );
+  // await user.reload(); // ✅ ensure fresh data
 
-      let parsedTokens = JSON.parse(user.token||"[]");
+  let parsedTokens = JSON.parse(user.token || "[]");
 
-      parsedTokens.push({
-        access_token: newShortToken,
-        refresh_token: newLargeToken,
-      })
+  parsedTokens.push({
+    access_token: newShortToken,
+    refresh_token: newLargeToken,
+  });
 
-      try{
-         await User.update(
-        { token: JSON.stringify(parsedTokens) },
-        { where: { id: user.id } }
-      );
-      }
-      catch(error){
-        console.log(error);
-        throw new Error(error);
-      }
-      // Use update() method instead of save() to avoid validation errors on other fields
-     
+  await user.update({
+    token: JSON.stringify(parsedTokens),
+  });
 
-      // Refresh the user object with updated token
-      user.token = JSON.stringify(parsedTokens);
-      await user.save();
-      return parsedTokens;
-    }
+  return parsedTokens;
+}
 
     static async findByCredentials(email, password){
 
       const user = await User.findOne({ where: { email: email.trim() } });
 
       if(!user){
-        throw new Error("Invalid email or password");
+        throw new Error("Invalid User, email not found");
       }
 
       const isPasswordMatch = await bcrypt.compare(password, user.password);
 
       if(!isPasswordMatch){
-        throw new Error("Invalid email or password");
+        throw new Error("Wrong password found !!");
       }
 
       return user;
@@ -138,14 +121,6 @@ export default (sequelize, DataTypes) => {
       },
       password: {
         allowNull: false,
-        unique: true,
-        validate: (value) => {
-          if (!validator.isStrongPassword(value)) {
-            throw new Error(
-              "Password must include upper, lower, number & special character (min 8).",
-            );
-          }
-        },
         type: DataTypes.STRING,
       },
       role: {
@@ -177,7 +152,7 @@ export default (sequelize, DataTypes) => {
         },
       },
       token: {
-        type: DataTypes.STRING(512),
+        type: DataTypes.TEXT,
         defaultValue: "[]",
         allowNull: false,
       },
@@ -201,8 +176,6 @@ export default (sequelize, DataTypes) => {
           user.password = user.password?.trim();
 
           user.password = await bcrypt.hash(user.password, 12);
-
-          // user.token = JSON.stringify([]);
 
         },
         beforeUpdate:async(user,options)=>{

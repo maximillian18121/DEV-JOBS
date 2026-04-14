@@ -158,4 +158,87 @@ const login = async (req, res) => {
   }
 };
 
-export { demoController, register, login };
+const refreshToken = async (req,res) => {
+    const {refresh_token} = req.body;
+
+    if(!refresh_token){
+        return res.status(400).json({ code: "VALIDATION_ERROR", message: "refresh_token is required" });
+    }
+
+    const existing_token = await refresh_tokens.findOne({
+        where:{
+           token: JSON.stringify(refresh_token)
+        }
+    });
+
+    if(!existing_token){
+        return res.status(401).json({ code: "REFRESH_TOKEN_EXPIRED", message: "Refresh token is invalid or expired" });
+    }
+
+    if(existing_token.is_revoked){
+        return res.status(401).json({ code: "REFRESH_TOKEN_REVOKED", message: "Refresh token is invalid or revoked" });
+    }
+
+    if(new Date()> existing_token.expires_at){
+        return res.status(401).json({ code: "REFRESH_TOKEN_EXPIRED", message: "Refresh token has expired" });
+    }
+
+    const transaction = await db.sequelize.transaction();
+
+    try {
+    const updatedRefreshToken = await existing_token.update({is_revoked: true},{transaction});
+
+    const userId = existing_token.user_id;
+
+    const token_user = await user.findByPk(userId,{transaction});
+
+    const newToken = await token_user.GenerateToken();
+
+    const lastToken = newToken [newToken.length -1 ];
+
+     const tokenGenerated = await refresh_tokens.create(
+      {
+        user_id: userId,
+        token: JSON.stringify({
+          access_token: lastToken.access_token, // Get the first (and newest) token
+          refresh_token: lastToken.refresh_token,
+        }),
+        expires_at: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000,
+        ),
+      },{transaction}
+    );
+
+    await transaction.commit();
+
+    const new_tokens = {
+        access_token: lastToken.access_token,
+        refresh_token : lastToken.refresh_token
+    }
+
+    return res.status(200).json({
+        message:"New token generated successfully",
+        token : new_tokens
+    })
+
+    } catch (error) {
+        await transaction.rollback();
+        return res.status(500).json({
+            code: "INTERNAL_ERROR",
+            message: error.message
+        })
+    }
+}
+
+const logout = async (req,res) => {
+    const {refresh_token} = req.body;
+
+    if(!refresh_token){
+        return res.status(400).json({ code: "VALIDATION_ERROR", message: "refresh_token is required" });
+    }
+
+    
+
+}
+
+export { demoController, register, login, refreshToken };

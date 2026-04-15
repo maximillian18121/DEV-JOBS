@@ -4,6 +4,8 @@ import express from "express";
 import cors from "cors";
 
 import userRouter from "./routes/userRoutes.js";
+import jobRouter from "./routes/jobRoutes.js";
+import companyRouter from "./routes/companyRoutes.js";
 
 const app = express();
 
@@ -12,6 +14,8 @@ app.use(express.json());
 
 // Routes
 app.use("/api/v1/user", userRouter);
+app.use("/api/v1/jobs", jobRouter);
+app.use("/api/v1/companies", companyRouter);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

@@ -287,4 +287,20 @@ const logout = async (req,res) => {
     }
 }
 
-export { demoController, register, login, refreshToken, logout };
+const getUserProfile = async(req, res) => {
+    const {currUser} = req;
+
+    if(!currUser){
+        return res.status(409).json({
+            code: "AUTH_ERROR",
+            message: "Please authenticate first"
+        })
+    }
+
+    return res.status(200).json({
+        code:"User profile retrived succesfully !!",
+        user: currUser
+    })
+}
+
+export { demoController, register, login, refreshToken, logout, getUserProfile };

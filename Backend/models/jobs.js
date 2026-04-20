@@ -46,7 +46,6 @@ export default (sequelize, DataTypes) => {
       },
       company_id: {
         allowNull: false,
-        unique: true,
         type: DataTypes.INTEGER,
         references:{
           model:"Companies",

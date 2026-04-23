@@ -35,6 +35,11 @@ export default (sequelize, DataTypes) => {
         as:"Applicants"
       })
 
+      Jobs.hasMany(models.Application, {
+        foreignKey:"job_id",
+        as:"Applications"
+      })
+
     }
   }
   Jobs.init({

@@ -98,6 +98,7 @@ export default (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'Jobs',
+    paranoid: true, // Enable soft delete
   });
   return Jobs;
 };

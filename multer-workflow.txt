@@ -1,0 +1,154 @@
+Explanation: The "logo" Field Name in Multer
+The string "logo" in .single("logo") is the field name that multer expects to receive in the multipart/form-data request body. Let me explain the complete multer lifecycle:
+
+Complete Multer Lifecycle
+1. Client-Side: Sending the Request
+When the frontend sends a file upload request, it must use multipart/form-data format:
+
+// Frontend example
+const formData = new FormData();
+formData.append("logo", fileInputElement.files[0]); // Field name MUST match "logo"
+formData.append("name", "My Company");
+formData.append("description", "Company info");
+
+fetch('/api/companies/create', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer token...' },
+  body: formData  // multipart/form-data
+});
+
+mportant: The field name "logo" in formData.append("logo", ...) must match what multer expects in .single("logo").
+
+2. Server-Side Lifecycle
+Step 1: Request Arrives at Route
+
+companyRouter.post("/create", auth, logoUpload.single("logo"), createCompany);
+
+Flow:
+
+Request hits the /create endpoint
+auth middleware runs (validates JWT token) → sets req.currUser
+logoUpload.single("logo") middleware runs (multer processes the file)
+createCompany controller executes
+Step 2: Multer Processes the File
+When logoUpload.single("logo") runs, multer does this:
+
+const logoUpload = multer({
+    storage,           // Defines where to save files
+    limits: {...},     // File size limit (4MB)
+    fileFilter: {...}  // Validates file type
+});
+
+Multer's Internal Steps:
+
+┌─────────────────────────────────────────────────────────────┐
+│ Request arrives with multipart/form-data                   │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Multer extracts file from "logo" field                     │
+│ (If field name doesn't match, file is ignored!)           │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ fileFilter() runs - Validates:                             │
+│ - MIME type (only image/png, image/jpeg allowed)          │
+│ - If validation fails → Error → Response 400              │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ File passes validation → diskStorage runs:                │
+│ 1. destination() → saves to:                              │
+│    public/uploads/company-logos/                          │
+│ 2. filename() → generates safe name:                      │
+│    1714332000123-8765.jpg                                 │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────────┐
+│ File saved to disk ✓                                       │
+│ req.file populated with metadata:                          │
+│ {                                                          │
+│   fieldname: "logo",                                       │
+│   originalname: "my-logo.jpg",                            │
+│   encoding: "7bit",                                        │
+│   mimetype: "image/jpeg",                                  │
+│   size: 245678,                                           │
+│   destination: "public/uploads/company-logos",            │
+│   filename: "1714332000123-8765.jpg",                     │
+│   path: "public/uploads/company-logos/1714332000123-8765.jpg"
+│ }                                                          │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+                     Control passes to
+                   createCompany controller
+
+Step 3: Controller Uses req.file
+In your companyController.js, you access the uploaded file:
+
+const createCompany = async (req, res) => {
+  const { name, description } = req.body;
+  
+  // req.file contains the uploaded file metadata (only if "logo" field was sent)
+  const logoFile = req.file;
+  
+  if (!logoFile) {
+    return res.status(400).json({
+      code: "VALIDATION_ERROR",
+      message: "Logo file is required"
+    });
+  }
+  
+  // Store the file path in database
+  const company = await Company.create({
+    name,
+    description,
+    logo_url: logoFile.filename, // Save filename or full path
+    // or: logo_url: `/uploads/company-logos/${logoFile.filename}`
+  });
+};
+
+What If Field Name Doesn't Match?
+
+// ❌ FRONTEND SENDS WRONG FIELD NAME
+formData.append("photo", fileObject);  // Sent as "photo"
+
+// ✓ BACKEND EXPECTS
+logoUpload.single("logo")  // Expects "logo"
+
+// RESULT: 
+// req.file === undefined  → Controller fails
+// File is NOT uploaded
+
+Key Concepts
+Concept	Explanation
+.single(fieldName)	Expects exactly ONE file with this field name
+Field Name	The key in multipart/form-data that contains the file
+req.file	Contains file metadata ONLY if field name matches
+Storage	Defines disk location and filename generation
+fileFilter	Validates file type/size before saving
+Destination	public/uploads/company-logos/
+Filename	Generated as timestamp + random: 1714332000123-8765.jpg
+Complete Request-Response Example
+Frontend:
+
+const formData = new FormData();
+formData.append("logo", document.getElementById("logoInput").files[0]);
+formData.append("name", "Acme Corp");
+
+fetch('/api/companies/create', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer eyJhbG...' },
+  body: formData
+});
+
+Server Processing:
+
+1. auth middleware → Validates JWT token
+2. logoUpload.single("logo") → Finds "logo" field in formData
+3. fileFilter → Checks MIME type (image/jpeg ✓)
+4. diskStorage → Saves to public/uploads/company-logos/1714332000123-8765.jpg
+5. req.file → { fieldname: "logo", filename: "1714332000123-8765.jpg", ... }
+6. createCompany → Access req.file.filename to save in database
+
+Why "logo"?
+It's a naming convention — you chose this name to describe what the file represents. You could have named it "companyLogo", "avatar", etc., but you must be consistent between client and server.

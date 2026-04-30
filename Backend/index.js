@@ -7,6 +7,7 @@ import userRouter from "./routes/userRoutes.js";
 import jobRouter from "./routes/jobRoutes.js";
 import companyRouter from "./routes/companyRoutes.js";
 import tagRouter from "./routes/tagRoutes.js";
+import applicationRouter from "./routes/applicationRoutes.js";
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/jobs", jobRouter);
 app.use("/api/v1/companies", companyRouter);
 app.use("/api/v1/tags", tagRouter);
+app.use("/api/v1/applications", applicationRouter);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

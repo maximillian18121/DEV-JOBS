@@ -7,4 +7,5 @@ const companyRouter = express.Router();
 
 companyRouter.post("/create", auth , logoUpload.single("logo") ,createCompany);
 
+
 export default companyRouter;

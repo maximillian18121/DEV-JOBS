@@ -68,7 +68,7 @@ const auth = async (req, res, next) => {
   }
 };
 
-const checkOwnerShip = async (Model, idParam = "id", ownerKey = "owner_id") => {
+const checkOwnerShip = (Model, idParam = "id", ownerKey = "owner_id") => {
   return async (req, res, next) => {
     try {
       const record = await Model.findByPk(req.params[idParam]);

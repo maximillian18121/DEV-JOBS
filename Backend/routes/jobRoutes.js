@@ -1,10 +1,11 @@
 import { createJobs, getAllJobs, getJobById, updateJobById, deleteJob } from "../controllers/jobController.js";
 import express from "express";
 import { auth } from "../middlewares/auth.middleware.js";
+import { logoUpload } from "../middlewares/uploadFileUtils.js";
 
 const jobRouter = express.Router();
 
-jobRouter.post("/create",auth, createJobs);
+jobRouter.post("/create",auth,logoUpload.single("logo"), createJobs);
 jobRouter.get("/", getAllJobs);
 jobRouter.get("/:id",auth, getJobById);
 jobRouter.patch("/:id", auth, updateJobById);

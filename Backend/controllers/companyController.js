@@ -1,6 +1,10 @@
+import { literal } from "sequelize";
 import db from "../models/index.js";
 
 const company = db.Companies;
+const job = db.Jobs;
+const user = db.User;
+const application = db.Application;
 
 const createCompany = async (req, res) => {
   const currUser = req.currUser;
@@ -134,4 +138,165 @@ const updateCompany = async (req, res) => {
   }
 };
 
-export { createCompany, updateCompany };
+const getCompanyProfile = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const companyRecord = await company.findByPk(id, {
+      attributes: [
+        "id",
+        "owner_id",
+        "name",
+        "website",
+        "logo_url",
+        "description",
+        "location",
+        "size",
+        "createdAt",
+        "updatedAt",
+        [
+          literal(`(
+            SELECT COUNT(*)
+            FROM "Jobs" AS "active_jobs"
+            WHERE "active_jobs"."company_id" = "Companies"."id"
+              AND "active_jobs"."status" = 'active'
+          )`),
+          "total_active",
+        ],
+        [
+          literal(`(
+            SELECT COUNT(*)
+            FROM "Applications" AS "hired_applications"
+            INNER JOIN "Jobs" AS "company_jobs"
+              ON "hired_applications"."job_id" = "company_jobs"."id"
+            WHERE "company_jobs"."company_id" = "Companies"."id"
+              AND "hired_applications"."status" = 'hired'
+          )`),
+          "total_hires",
+        ],
+      ],
+      include: [
+        {
+          model: user,
+          as: "Owner",
+          attributes: ["id", "firstName", "lastName"],
+        },
+        {
+          model: job,
+          as: "companies",
+          attributes: [
+            "id",
+            "title",
+            "job_type",
+            "work_mode",
+            "location",
+            "salary_min",
+            "salary_max",
+            "status",
+            "createdAt",
+          ],
+          where: { status: "active" },
+          required: false,
+          order: [["createdAt", "DESC"]],
+          limit: 10,
+        },
+      ],
+    });
+
+    if (!companyRecord) {
+      return res.status(404).json({
+        code: "COMPANY_NOT_FOUND",
+        message: "Company not found",
+      });
+    }
+
+    const companyData = companyRecord.toJSON();
+
+    const owner = companyData.Owner
+      ? {
+          id: companyData.Owner.id,
+          full_name: `${companyData.Owner.firstName || ""} ${
+            companyData.Owner.lastName || ""
+          }`.trim(),
+        }
+      : null;
+
+    const jobs = Array.isArray(companyData.companies)
+      ? companyData.companies
+      : [];
+
+    const responseCompany = {
+      id: companyData.id,
+      owner,
+      name: companyData.name,
+      website: companyData.website,
+      logo_url: companyData.logo_url,
+      description: companyData.description,
+      location: companyData.location,
+      size: companyData.size,
+      createdAt: companyData.createdAt,
+      updatedAt: companyData.updatedAt,
+    };
+
+    return res.status(200).json({
+      company: responseCompany,
+      jobs,
+      jobs_meta: {
+        total_active: parseInt(companyData.total_active, 10) || 0,
+      },
+      stats: {
+        total_hires: parseInt(companyData.total_hires, 10) || 0,
+      },
+    });
+  } catch (error) {
+    console.error("getCompanyProfile error:", error);
+    return res.status(500).json({
+      code: "INTERNAL_ERROR",
+      message: "Failed to fetch company profile",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+const updateCompanyLogo = async (req, res) => {
+  const { id } = req.params;
+  const logoFile = req.file;
+
+  if (!logoFile) {
+    return res.status(400).json({
+      code: "VALIDATION_ERROR",
+      message: "No file uploaded",
+    });
+  }
+
+  try {
+    const companyRecord = await company.findByPk(id);
+
+    if (!companyRecord) {
+      return res.status(404).json({
+        code: "COMPANY_NOT_FOUND",
+        message: "Company not found",
+      });
+    }
+
+    const logoUrl = `/uploads/company-logos/${logoFile.filename}`;
+    companyRecord.logo_url = logoUrl;
+    await companyRecord.save();
+
+    return res.status(200).json({
+      logo_url: logoUrl,
+      company: { logo_url: companyRecord.logo_url },
+    });
+  } catch (error) {
+    console.error("updateCompanyLogo error:", error);
+    return res.status(500).json({
+      code: "INTERNAL_ERROR",
+      message: "Failed to update company logo",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+
+
+export { createCompany, updateCompany, getCompanyProfile, updateCompanyLogo };

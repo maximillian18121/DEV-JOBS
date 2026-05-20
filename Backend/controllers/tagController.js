@@ -1,4 +1,5 @@
 import db from "../models/index.js";
+import { literal, Op } from "sequelize";
 
 const tags = db.tags;
 
@@ -58,4 +59,50 @@ const createTags = async (req, res) => {
   }
 };
 
-export { createTags };
+const getAllTags = async (req, res) => {
+  const {search} = req.query;
+
+  try {
+
+    const where = {};
+
+    if(search && typeof search === "string" && search.trim()){
+      const searchTerm = search.trim();
+      where[Op.or] = [
+        {name : { [Op.iLike]: `%${searchTerm}%`}},
+        {slug : { [Op.iLike]: `%${searchTerm}%`}}
+      ]
+    }
+   
+    const allTags = await tags.findAll(
+      {
+        where,
+        attributes:[
+          "id","name","slug",
+           [
+          literal(`(
+            SELECT COUNT(*)
+            FROM "job_tags"
+            INNER JOIN "Jobs" ON "job_tags"."job_id" = "Jobs"."id"
+            WHERE "job_tags"."tag_id" = "tags"."id"
+              AND "Jobs"."status" = 'active'
+          )`),
+          "job_count",
+        ],
+        ]
+      }
+    );
+    return res.status(200).json({
+      data:allTags
+    })
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      code: "INTERNAL_ERROR",
+      message: error.message,
+    });
+  }
+}
+
+
+export { createTags, getAllTags };
